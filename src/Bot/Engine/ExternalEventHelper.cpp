@@ -33,8 +33,10 @@ bool ExternalEventHelper::ParseChatCommand(std::string const command, Player* ow
     if (!ChatHelper::parseable(command))
         return false;
 
+#if 0 // disable auto inventory/trade response to item links in chat
     HandleCommand("c", command, owner);
     HandleCommand("t", command, owner);
+#endif
 
     return true;
 }
