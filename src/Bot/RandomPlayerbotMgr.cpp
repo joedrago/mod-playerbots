@@ -432,6 +432,193 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
             sRandomPlayerbotMgr.CheckLfgQueue();
     }
 
+    // Redistribute idle bots toward zones where same-faction real players are
+    {
+        static time_t nearPlayerCheckTimer = 0;
+        if (time(nullptr) > nearPlayerCheckTimer + 60)
+        {
+            nearPlayerCheckTimer = time(nullptr);
+
+            // Collect real player info: zone, level, faction
+            struct PlayerZoneInfo { uint32 zoneId; uint32 level; bool alliance; };
+            std::vector<PlayerZoneInfo> playerZoneInfos;
+            for (auto* p : GetPlayers())
+            {
+                if (!p || !p->IsInWorld() || p->InBattleground() || p->GetMap()->Instanceable())
+                    continue;
+                uint32 zoneId = p->GetZoneId();
+                if (zoneId)
+                    playerZoneInfos.push_back({zoneId, p->GetLevel(), IsAlliance(p->getRace())});
+            }
+
+            if (!playerZoneInfos.empty())
+            {
+                // Count how many bots are already in each player's zone, per faction
+                std::map<std::pair<uint32, bool>, uint32> botsPerZone;
+                for (auto& pzi : playerZoneInfos)
+                    botsPerZone[{pzi.zoneId, pzi.alliance}] = 0;
+
+                for (auto& [guid, bot] : playerBots)
+                {
+                    if (!bot || !bot->IsInWorld())
+                        continue;
+                    if (!IsRandomBot(bot))
+                        continue;
+                    auto key = std::make_pair(bot->GetZoneId(), IsAlliance(bot->getRace()));
+                    auto it = botsPerZone.find(key);
+                    if (it != botsPerZone.end())
+                        it->second++;
+                }
+
+                uint32 redirected = 0;
+                for (auto& [guid, bot] : playerBots)
+                {
+                    if (redirected >= 5)
+                        break;
+                    if (!bot || !bot->IsInWorld() || bot->InBattleground())
+                        continue;
+                    if (!IsRandomBot(bot))
+                        continue;
+                    if (bot->GetGroup())
+                        continue;
+
+                    PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
+                    if (!botAI)
+                        continue;
+
+                    TravelTarget* target = botAI->GetAiObjectContext()
+                        ->GetValue<TravelTarget*>("travel target")->Get();
+                    if (target && target->getTravelState() != TravelState::TRAVEL_STATE_IDLE)
+                        continue;
+
+                    bool botAlliance = IsAlliance(bot->getRace());
+                    uint32 botZone = bot->GetZoneId();
+
+                    // Find the least-served same-faction player
+                    PlayerZoneInfo* bestMatch = nullptr;
+                    uint32 bestCount = UINT32_MAX;
+                    bool alreadyServing = false;
+
+                    for (auto& pzi : playerZoneInfos)
+                    {
+                        if (pzi.alliance != botAlliance)
+                            continue;
+                        // Bot is already in a player's zone — leave it alone
+                        if (botZone == pzi.zoneId)
+                        {
+                            alreadyServing = true;
+                            break;
+                        }
+                        uint32 count = botsPerZone[{pzi.zoneId, pzi.alliance}];
+                        if (count < bestCount)
+                        {
+                            bestCount = count;
+                            bestMatch = &pzi;
+                        }
+                    }
+
+                    if (alreadyServing || !bestMatch)
+                        continue;
+
+                    // Re-level the bot to match the player and teleport
+                    uint32 targetLevel = bestMatch->level + irand(-2, 2);
+                    targetLevel = std::max(1u, std::min(targetLevel,
+                        sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL)));
+                    uint32 botId = bot->GetGUID().GetCounter();
+
+                    LOG_INFO("playerbots", "Bot #{} <{}>: redistributing to player zone {} at level {}",
+                             botId, bot->GetName(), bestMatch->zoneId, targetLevel);
+
+                    SetValue(botId, "level", targetLevel);
+                    PlayerbotFactory factory(bot, targetLevel);
+                    factory.Randomize(false);
+                    botAI->Reset(true);
+                    RandomTeleportForLevel(bot);
+
+                    // Reschedule timers normally
+                    ScheduleRandomize(botId, urand(sPlayerbotAIConfig.minRandomBotRandomizeTime,
+                        sPlayerbotAIConfig.maxRandomBotRandomizeTime));
+                    ScheduleTeleport(botId, urand(sPlayerbotAIConfig.minRandomBotTeleportInterval,
+                        sPlayerbotAIConfig.maxRandomBotTeleportInterval));
+
+                    // Update count so next candidate sees the new state
+                    botsPerZone[{bestMatch->zoneId, bestMatch->alliance}]++;
+                    redirected++;
+                }
+            }
+
+            // Dynamic faction balancing: adjust ratio based on real player factions
+            // and log off a few bots of the over-represented faction
+            bool anyAlliance = false;
+            bool anyHorde = false;
+            for (auto& pzi : playerZoneInfos)
+            {
+                if (pzi.alliance)
+                    anyAlliance = true;
+                else
+                    anyHorde = true;
+            }
+
+            if (anyAlliance && !anyHorde)
+            {
+                sPlayerbotAIConfig.randomBotAllianceRatio = 100;
+                sPlayerbotAIConfig.randomBotHordeRatio = 0;
+            }
+            else if (anyHorde && !anyAlliance)
+            {
+                sPlayerbotAIConfig.randomBotAllianceRatio = 0;
+                sPlayerbotAIConfig.randomBotHordeRatio = 100;
+            }
+            else if (anyAlliance && anyHorde)
+            {
+                sPlayerbotAIConfig.randomBotAllianceRatio = 50;
+                sPlayerbotAIConfig.randomBotHordeRatio = 50;
+            }
+            // If no real players, leave ratio as-is
+
+            // Log off a few bots of the faction with 0 real players
+            if (anyAlliance != anyHorde)
+            {
+                bool unwantedFaction = anyHorde; // if only Horde players, unwanted = Alliance (true)
+                uint32 loggedOff = 0;
+                // Iterate a copy since we modify currentBots
+                std::list<uint32> botsCopy = currentBots;
+                for (uint32 botGuid : botsCopy)
+                {
+                    if (loggedOff >= 5)
+                        break;
+
+                    ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(botGuid);
+                    Player* botPlayer = GetPlayerBot(guid);
+                    if (!botPlayer || !botPlayer->IsInWorld())
+                        continue;
+                    if (!IsRandomBot(botPlayer))
+                        continue;
+                    if (botPlayer->GetGroup())
+                        continue;
+                    if (IsAlliance(botPlayer->getRace()) != unwantedFaction)
+                        continue;
+
+                    // Check idle
+                    PlayerbotAI* botAI = GET_PLAYERBOT_AI(botPlayer);
+                    if (!botAI)
+                        continue;
+                    TravelTarget* target = botAI->GetAiObjectContext()
+                        ->GetValue<TravelTarget*>("travel target")->Get();
+                    if (target && target->getTravelState() != TravelState::TRAVEL_STATE_IDLE)
+                        continue;
+
+                    LOG_INFO("playerbots", "Bot #{} <{}>: logging off (faction rebalance)",
+                             botGuid, botPlayer->GetName());
+                    SetEventValue(botGuid, "add", 0, 0);
+                    currentBots.remove(botGuid);
+                    LogoutPlayerBot(guid);
+                    loggedOff++;
+                }
+            }
+        }
+    }
+
     if (sPlayerbotAIConfig.randomBotAutologin && time(nullptr) > (printStatsTimer + 300))
     {
         if (!printStatsTimer)
@@ -2151,6 +2338,49 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
         locs = IsAlliance(race) ? &allianceStarterPerLevelCache[level] : &hordeStarterPerLevelCache[level];
     else
         locs = &locsPerLevelCache[level];
+
+    // Bias toward zones where same-faction real players are
+    {
+        bool botAlliance = IsAlliance(race);
+        std::unordered_set<uint32> playerZones;
+        for (auto* realPlayer : GetPlayers())
+        {
+            if (!realPlayer || !realPlayer->IsInWorld() || realPlayer->InBattleground() || realPlayer->GetMap()->Instanceable())
+                continue;
+            if (IsAlliance(realPlayer->getRace()) != botAlliance)
+                continue;
+            int32 levelDiff = (int32)realPlayer->GetLevel() - (int32)level;
+            if (levelDiff < -5 || levelDiff > 5)
+                continue;
+            uint32 zoneId = realPlayer->GetZoneId();
+            if (zoneId)
+                playerZones.insert(zoneId);
+        }
+
+        if (!playerZones.empty() && locs && !locs->empty() && urand(0, 100) < 80)
+        {
+            std::vector<WorldLocation> nearPlayerLocs;
+            for (auto const& loc : *locs)
+            {
+                Map* map = sMapMgr->FindBaseNonInstanceMap(loc.GetMapId());
+                if (!map)
+                    continue;
+                uint32 zoneId = map->GetZoneId(PHASEMASK_NORMAL,
+                    loc.GetPositionX(), loc.GetPositionY(), loc.GetPositionZ());
+                if (playerZones.count(zoneId))
+                    nearPlayerLocs.push_back(loc);
+            }
+
+            if (!nearPlayerLocs.empty())
+            {
+                LOG_DEBUG("playerbots", "Bot #{} <{}>: teleporting to player zone ({} candidate locations)",
+                          bot->GetGUID().GetCounter(), bot->GetName(), nearPlayerLocs.size());
+                RandomTeleport(bot, nearPlayerLocs);
+                return;
+            }
+        }
+    }
+
     if (level >= 10 && urand(0, 100) < sPlayerbotAIConfig.probTeleToBankers * 100)
     {
         std::vector<WorldLocation> fallbackLocs;
