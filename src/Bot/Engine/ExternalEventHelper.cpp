@@ -11,6 +11,17 @@
 
 bool ExternalEventHelper::ParseChatCommand(std::string const command, Player* owner)
 {
+    // "table" shortcut: rewrite to "cast Ritual of Refreshment" for mage bots
+    if (command == "table")
+    {
+        auto* value = aiObjectContext->GetValue<Unit*>("self target");
+        Player* bot = value ? dynamic_cast<Player*>(value->Get()) : nullptr;
+        if (bot && bot->getClass() == CLASS_MAGE && bot->GetLevel() >= 70)
+            return HandleCommand("cast", "Ritual of Refreshment", owner);
+
+        return true; // silently ignore for non-mages
+    }
+
     if (HandleCommand(command, "", owner))
         return true;
 

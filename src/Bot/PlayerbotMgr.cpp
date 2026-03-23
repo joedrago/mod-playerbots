@@ -627,7 +627,8 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
 
     bot->SaveToDB(false, false);
     bool addClassBot = sRandomPlayerbotMgr.IsAccountType(accountId, 2);
-    if (addClassBot && master && abs((int)master->GetLevel() - (int)bot->GetLevel()) > 3)
+    bool sameAccountBot = master && (accountId == master->GetSession()->GetAccountId());
+    if ((addClassBot || sameAccountBot) && master && bot->GetLevel() != master->GetLevel())
     {
         // PlayerbotFactory factory(bot, master->GetLevel());
         // factory.Randomize(false);
@@ -720,6 +721,10 @@ std::string const PlayerbotHolder::ProcessBotCommand(std::string const cmd, Obje
     {
         if (ObjectAccessor::FindPlayer(guid))
             return "player already logged in";
+
+        // Block adding random bots or addclass bots by name — use addclass instead
+        if (sRandomPlayerbotMgr.IsRandomBot(guid.GetCounter()) || sRandomPlayerbotMgr.IsAddclassBot(guid.GetCounter()))
+            return "you cannot add bots from the random pool by name";
 
         // For addaccount command, verify it's an account name
         if (cmd == "addaccount")
