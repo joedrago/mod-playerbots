@@ -26,7 +26,10 @@ void PlayerbotTextMgr::LoadBotTexts()
 {
     LOG_INFO("playerbots", "Loading playerbots texts...");
 
+    std::map<std::string, std::vector<BotTextEntry>> newBotTexts;
+    std::set<std::string> personalitySet;
     uint32 count = 0;
+
     if (PreparedQueryResult result =
             PlayerbotsDatabase.Query(PlayerbotsDatabase.GetPreparedStatement(PLAYERBOTS_SEL_TEXT)))
     {
@@ -38,36 +41,60 @@ void PlayerbotTextMgr::LoadBotTexts()
             text[0] = fields[1].Get<std::string>();
             uint8 sayType = fields[2].Get<uint8>();
             uint8 replyType = fields[3].Get<uint8>();
+            std::string personality = fields[4].Get<std::string>();
             for (uint8 i = 1; i < MAX_LOCALES; ++i)
             {
-                text[i] = fields[i + 3].Get<std::string>();
+                text[i] = fields[i + 4].Get<std::string>();
             }
 
-            botTexts[name].push_back(BotTextEntry(name, text, sayType, replyType));
+            newBotTexts[name].push_back(BotTextEntry(name, text, sayType, replyType, personality));
+
+            if (personality != "default")
+                personalitySet.insert(personality);
+
             ++count;
         } while (result->NextRow());
     }
 
-    LOG_INFO("playerbots", "{} playerbots texts loaded", count);
+    // Atomic swap — safe for concurrent readers finishing on old data
+    std::swap(botTexts, newBotTexts);
+
+    std::vector<std::string> newPersonalities(personalitySet.begin(), personalitySet.end());
+    std::swap(personalities, newPersonalities);
+
+    LOG_INFO("playerbots", "{} playerbots texts loaded ({} personalities)", count, personalities.size());
+}
+
+std::string PlayerbotTextMgr::GetRandomPersonality() const
+{
+    if (personalities.empty())
+        return "";
+    return personalities[urand(0, personalities.size() - 1)];
 }
 
 void PlayerbotTextMgr::LoadBotTextChance()
 {
-    if (botTextChance.empty())
+    std::map<std::string, uint32> newBotTextChance;
+    QueryResult results = PlayerbotsDatabase.Query("SELECT name, probability FROM ai_playerbot_texts_chance");
+    if (results)
     {
-        QueryResult results = PlayerbotsDatabase.Query("SELECT name, probability FROM ai_playerbot_texts_chance");
-        if (results)
+        do
         {
-            do
-            {
-                Field* fields = results->Fetch();
-                std::string name = fields[0].Get<std::string>();
-                uint32 probability = fields[1].Get<uint32>();
+            Field* fields = results->Fetch();
+            std::string name = fields[0].Get<std::string>();
+            uint32 probability = fields[1].Get<uint32>();
 
-                botTextChance[name] = probability;
-            } while (results->NextRow());
-        }
+            newBotTextChance[name] = probability;
+        } while (results->NextRow());
     }
+    std::swap(botTextChance, newBotTextChance);
+}
+
+// helper to pick a random text from a list
+std::string PlayerbotTextMgr::GetTextFromList(std::vector<BotTextEntry>& list)
+{
+    BotTextEntry& textEntry = list[urand(0, list.size() - 1)];
+    return !textEntry.m_text[GetLocalePriority()].empty() ? textEntry.m_text[GetLocalePriority()] : textEntry.m_text[0];
 }
 
 // general texts
@@ -87,8 +114,7 @@ std::string PlayerbotTextMgr::GetBotText(std::string name)
     }
 
     std::vector<BotTextEntry>& list = botTexts[name];
-    BotTextEntry textEntry = list[urand(0, list.size() - 1)];
-    return !textEntry.m_text[GetLocalePriority()].empty() ? textEntry.m_text[GetLocalePriority()] : textEntry.m_text[0];
+    return GetTextFromList(list);
 }
 
 std::string PlayerbotTextMgr::GetBotText(std::string name, std::map<std::string, std::string> placeholders)
@@ -115,6 +141,99 @@ std::string PlayerbotTextMgr::GetBotTextOrDefault(std::string name, std::string 
         }
         return defaultText;
     }
+
+    return botText;
+}
+
+// personality-aware text selection
+
+std::string PlayerbotTextMgr::GetBotText(std::string name, const std::string& personality)
+{
+    if (botTexts.empty() || botTexts[name].empty())
+        return GetBotText(name);
+
+    std::vector<BotTextEntry>& list = botTexts[name];
+
+    // Try personality-specific texts first
+    if (!personality.empty())
+    {
+        std::vector<BotTextEntry> filtered;
+        for (auto& entry : list)
+        {
+            if (entry.m_personality == personality)
+                filtered.push_back(entry);
+        }
+        if (!filtered.empty())
+            return GetTextFromList(filtered);
+    }
+
+    // Fallback to "default" personality only
+    std::vector<BotTextEntry> defaults;
+    for (auto& entry : list)
+    {
+        if (entry.m_personality == "default")
+            defaults.push_back(entry);
+    }
+    if (!defaults.empty())
+        return GetTextFromList(defaults);
+
+    // Ultimate fallback: any entry
+    return GetTextFromList(list);
+}
+
+std::string PlayerbotTextMgr::GetBotText(std::string name, const std::string& personality, std::map<std::string, std::string> placeholders)
+{
+    std::string botText = GetBotText(name, personality);
+    if (botText.empty())
+        return "";
+
+    for (auto& p : placeholders)
+        replaceAll(botText, p.first, p.second);
+
+    return botText;
+}
+
+bool PlayerbotTextMgr::GetBotText(std::string name, std::string& text, std::map<std::string, std::string> placeholders, const std::string& personality)
+{
+    if (!rollTextChance(name))
+        return false;
+
+    text = GetBotText(name, personality, placeholders);
+    return !text.empty();
+}
+
+std::string PlayerbotTextMgr::GetBotText(ChatReplyType replyType, const std::string& personality, std::map<std::string, std::string> placeholders)
+{
+    if (botTexts.empty() || botTexts["reply"].empty())
+        return GetBotText(replyType, placeholders);
+
+    std::vector<BotTextEntry>& list = botTexts["reply"];
+
+    // Filter by replyType, then try personality
+    std::vector<BotTextEntry> personalityMatches;
+    std::vector<BotTextEntry> defaultMatches;
+
+    for (auto& entry : list)
+    {
+        if (entry.m_replyType != replyType)
+            continue;
+
+        if (!personality.empty() && entry.m_personality == personality)
+            personalityMatches.push_back(entry);
+        if (entry.m_personality == "default")
+            defaultMatches.push_back(entry);
+    }
+
+    std::string botText;
+    if (!personality.empty() && !personalityMatches.empty())
+        botText = GetTextFromList(personalityMatches);
+    else if (!defaultMatches.empty())
+        botText = GetTextFromList(defaultMatches);
+    else
+        return GetBotText(replyType, placeholders);  // ultimate fallback
+
+    for (auto& p : placeholders)
+        replaceAll(botText, p.first, p.second);
 
     return botText;
 }

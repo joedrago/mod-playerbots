@@ -13,14 +13,15 @@
 
 struct BotTextEntry
 {
-    BotTextEntry(std::string name, std::map<uint32, std::string> text, uint32 say_type, uint32 reply_type)
-        : m_name(name), m_text(text), m_sayType(say_type), m_replyType(reply_type)
+    BotTextEntry(std::string name, std::map<uint32, std::string> text, uint32 say_type, uint32 reply_type, std::string personality = "default")
+        : m_name(name), m_text(text), m_sayType(say_type), m_replyType(reply_type), m_personality(personality)
     {
     }
     std::string m_name;
     std::map<uint32, std::string> m_text;
     uint32 m_sayType;
     uint32 m_replyType;
+    std::string m_personality;
 };
 
 struct ChatReplyData
@@ -75,6 +76,14 @@ public:
     bool GetBotText(std::string name, std::string& text, std::map<std::string, std::string> placeholders);
     std::string GetBotTextOrDefault(std::string name, std::string defaultText,
                                     std::map<std::string, std::string> placeholders);
+
+    // Personality-aware overloads
+    std::string GetBotText(std::string name, const std::string& personality, std::map<std::string, std::string> placeholders);
+    std::string GetBotText(std::string name, const std::string& personality);
+    bool GetBotText(std::string name, std::string& text, std::map<std::string, std::string> placeholders, const std::string& personality);
+    std::string GetBotText(ChatReplyType replyType, const std::string& personality, std::map<std::string, std::string> placeholders);
+
+    std::string GetRandomPersonality() const;
     void LoadBotTexts();
     void LoadBotTextChance();
     static void replaceAll(std::string& str, const std::string& from, const std::string& to);
@@ -100,8 +109,11 @@ private:
     PlayerbotTextMgr(PlayerbotTextMgr&&) = delete;
     PlayerbotTextMgr& operator=(PlayerbotTextMgr&&) = delete;
 
+    std::string GetTextFromList(std::vector<BotTextEntry>& list);
+
     std::map<std::string, std::vector<BotTextEntry>> botTexts;
     std::map<std::string, uint32> botTextChance;
+    std::vector<std::string> personalities;
     uint32 botTextLocalePriority[MAX_LOCALES];
 };
 

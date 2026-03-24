@@ -1637,7 +1637,8 @@ void PlayerbotMgr::OnBotLoginInternal(Player* const bot)
     botAI->SetMaster(master);
     botAI->ResetStrategies();
 
-    LOG_INFO("playerbots", "Bot {} logged in", bot->GetName().c_str());
+    LOG_INFO("playerbots", "Bot {} logged in (personality: {})", bot->GetName().c_str(),
+             botAI->GetPersonality().empty() ? "default" : botAI->GetPersonality());
 }
 
 void PlayerbotMgr::OnPlayerLogin(Player* player)

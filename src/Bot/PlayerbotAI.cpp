@@ -18,6 +18,7 @@
 #include "Common.h"
 #include "CreatureData.h"
 #include "EmoteAction.h"
+#include "PlayerbotTextMgr.h"
 #include "Engine.h"
 #include "EventProcessor.h"
 #include "ExternalEventHelper.h"
@@ -152,6 +153,8 @@ PlayerbotAI::PlayerbotAI(Player* bot)
         ApplyInstanceStrategies(bot->GetMapId());
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     currentState = BOT_STATE_NON_COMBAT;
+
+    personality = PlayerbotTextMgr::instance().GetRandomPersonality();
 
     masterIncomingPacketHandlers.AddHandler(CMSG_GAMEOBJ_USE, "use game object");
     masterIncomingPacketHandlers.AddHandler(CMSG_AREATRIGGER, "area trigger");

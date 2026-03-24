@@ -18,6 +18,7 @@
 #include "GuildTaskMgr.h"
 #include "PerfMonitor.h"
 #include "PlayerbotMgr.h"
+#include "PlayerbotTextMgr.h"
 #include "RandomPlayerbotMgr.h"
 #include "ScriptMgr.h"
 
@@ -41,6 +42,10 @@ public:
             {"unlink", HandleUnlinkAccountCommand, SEC_PLAYER, Console::No},
         };
 
+        static ChatCommandTable playerbotsReloadCommandTable = {
+            {"texts", HandleReloadTextsCommand, SEC_GAMEMASTER, Console::Yes},
+        };
+
         static ChatCommandTable playerbotsCommandTable = {
             {"bot", HandlePlayerbotCommand, SEC_PLAYER, Console::No},
             {"gtask", HandleGuildTaskCommand, SEC_GAMEMASTER, Console::Yes},
@@ -48,6 +53,7 @@ public:
             {"rndbot", HandleRandomPlayerbotCommand, SEC_GAMEMASTER, Console::Yes},
             {"debug", playerbotsDebugCommandTable},
             {"account", playerbotsAccountCommandTable},
+            {"reload", playerbotsReloadCommandTable},
         };
 
         static ChatCommandTable commandTable = {
@@ -206,6 +212,13 @@ public:
             handler->PSendSysMessage("PlayerbotMgr instance not found.");
             return false;
         }
+    }
+    static bool HandleReloadTextsCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        PlayerbotTextMgr::instance().LoadBotTexts();
+        PlayerbotTextMgr::instance().LoadBotTextChance();
+        handler->PSendSysMessage("Playerbots texts and personalities reloaded.");
+        return true;
     }
 };
 

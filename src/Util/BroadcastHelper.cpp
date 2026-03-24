@@ -187,7 +187,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_poor", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_poor", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -197,7 +197,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_normal", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_normal", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -207,7 +207,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_uncommon", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_uncommon", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -217,7 +217,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_rare", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_rare", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -227,7 +227,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_epic", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_epic", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -237,7 +237,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_legendary", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_legendary", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -247,7 +247,7 @@ bool BroadcastHelper::BroadcastLootingItem(PlayerbotAI* ai, Player* bot, ItemTem
             {
                 return BroadcastToChannelWithGlobalChance(
                     ai,
-                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_artifact", placeholders),
+                    PlayerbotTextMgr::instance().GetBotText("broadcast_looting_item_artifact", ai->GetPersonality(), placeholders),
                     { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                 );
             }
@@ -277,7 +277,7 @@ bool BroadcastHelper::BroadcastQuestAccepted(PlayerbotAI* ai, Player* bot, const
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_accepted_generic", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_accepted_generic", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -309,7 +309,7 @@ bool BroadcastHelper::BroadcastQuestUpdateAddKill(PlayerbotAI* ai, Player* bot, 
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_kill_objective_progress", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_kill_objective_progress", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -318,7 +318,7 @@ bool BroadcastHelper::BroadcastQuestUpdateAddKill(PlayerbotAI* ai, Player* bot, 
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_kill_objective_completed", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_kill_objective_completed", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -351,7 +351,7 @@ bool BroadcastHelper::BroadcastQuestUpdateAddItem(PlayerbotAI* ai, Player* bot, 
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_item_objective_progress", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_item_objective_progress", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -360,7 +360,7 @@ bool BroadcastHelper::BroadcastQuestUpdateAddItem(PlayerbotAI* ai, Player* bot, 
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_item_objective_completed", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_add_item_objective_completed", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -386,7 +386,7 @@ bool BroadcastHelper::BroadcastQuestUpdateFailedTimer(PlayerbotAI* ai, Player* b
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_failed_timer", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_failed_timer", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -412,7 +412,7 @@ bool BroadcastHelper::BroadcastQuestUpdateComplete(PlayerbotAI* ai, Player* bot,
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_complete", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_update_complete", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -438,7 +438,7 @@ bool BroadcastHelper::BroadcastQuestTurnedIn(PlayerbotAI* ai, Player* bot, Quest
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_turned_in", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_quest_turned_in", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -472,7 +472,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
         {
             return BroadcastToChannelWithGlobalChance(
                 ai,
-                PlayerbotTextMgr::instance().GetBotText("broadcast_killed_pet", placeholders),
+                PlayerbotTextMgr::instance().GetBotText("broadcast_killed_pet", ai->GetPersonality(), placeholders),
                 { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
             );
         }
@@ -485,7 +485,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
 
             return BroadcastToChannelWithGlobalChance(
                 ai,
-                PlayerbotTextMgr::instance().GetBotText("broadcast_killed_player", placeholders),
+                PlayerbotTextMgr::instance().GetBotText("broadcast_killed_player", ai->GetPersonality(), placeholders),
                 { {TO_WORLD_DEFENSE, 50}, {TO_LOCAL_DEFENSE, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
             );
         }
@@ -499,7 +499,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
                 {
                     return BroadcastToChannelWithGlobalChance(
                         ai,
-                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_normal", placeholders),
+                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_normal", ai->GetPersonality(), placeholders),
                         { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                     );
                 }
@@ -509,7 +509,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
                 {
                     return BroadcastToChannelWithGlobalChance(
                         ai,
-                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_elite", placeholders),
+                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_elite", ai->GetPersonality(), placeholders),
                         { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                     );
                 }
@@ -519,7 +519,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
                 {
                     return BroadcastToChannelWithGlobalChance(
                         ai,
-                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_rareelite", placeholders),
+                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_rareelite", ai->GetPersonality(), placeholders),
                         { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                     );
                 }
@@ -529,7 +529,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
                 {
                     return BroadcastToChannelWithGlobalChance(
                         ai,
-                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_worldboss", placeholders),
+                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_worldboss", ai->GetPersonality(), placeholders),
                         { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                     );
                 }
@@ -539,7 +539,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
                 {
                     return BroadcastToChannelWithGlobalChance(
                         ai,
-                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_rare", placeholders),
+                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_rare", ai->GetPersonality(), placeholders),
                         { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                     );
                 }
@@ -549,7 +549,7 @@ bool BroadcastHelper::BroadcastKill(PlayerbotAI* ai, Player* bot, Creature *crea
                 {
                     return BroadcastToChannelWithGlobalChance(
                         ai,
-                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_unknown", placeholders),
+                        PlayerbotTextMgr::instance().GetBotText("broadcast_killed_unknown", ai->GetPersonality(), placeholders),
                         { {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
                     );
                 }
@@ -582,7 +582,7 @@ bool BroadcastHelper::BroadcastLevelup(PlayerbotAI* ai, Player* bot)
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_levelup_max_level", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_levelup_max_level", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 30}, {TO_WORLD, 90}, {TO_GENERAL, 100} }
         );
     }
@@ -592,7 +592,7 @@ bool BroadcastHelper::BroadcastLevelup(PlayerbotAI* ai, Player* bot)
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_levelup_10x", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_levelup_10x", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 50}, {TO_WORLD, 90}, {TO_GENERAL, 100} }
         );
     }
@@ -600,7 +600,7 @@ bool BroadcastHelper::BroadcastLevelup(PlayerbotAI* ai, Player* bot)
     {
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("broadcast_levelup_generic", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("broadcast_levelup_generic", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 90}, {TO_WORLD, 90}, {TO_GENERAL, 100} }
         );
     }
@@ -620,7 +620,7 @@ bool BroadcastHelper::BroadcastGuildMemberPromotion(PlayerbotAI* ai, Player* /* 
         placeholders["%other_race"] = ai->GetChatHelper()->FormatRace(player->getRace());
         placeholders["%other_level"] = std::to_string(player->GetLevel());
 
-        return ai->SayToGuild(PlayerbotTextMgr::instance().GetBotText("broadcast_guild_promotion", placeholders));
+        return ai->SayToGuild(PlayerbotTextMgr::instance().GetBotText("broadcast_guild_promotion", ai->GetPersonality(), placeholders));
     }
 
     return false;
@@ -636,7 +636,7 @@ bool BroadcastHelper::BroadcastGuildMemberDemotion(PlayerbotAI* ai, Player* /* b
         placeholders["%other_race"] = ai->GetChatHelper()->FormatRace(player->getRace());
         placeholders["%other_level"] = std::to_string(player->GetLevel());
 
-        return ai->SayToGuild(PlayerbotTextMgr::instance().GetBotText("broadcast_guild_demotion", placeholders));
+        return ai->SayToGuild(PlayerbotTextMgr::instance().GetBotText("broadcast_guild_demotion", ai->GetPersonality(), placeholders));
     }
 
     return false;
@@ -701,7 +701,7 @@ bool BroadcastHelper::BroadcastSuggestInstance(PlayerbotAI* ai, std::vector<std:
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_instance", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_instance", ai->GetPersonality(), placeholders),
             { {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -730,7 +730,7 @@ bool BroadcastHelper::BroadcastSuggestQuest(PlayerbotAI* ai, std::vector<uint32>
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_quest", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_quest", ai->GetPersonality(), placeholders),
             { {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -755,7 +755,7 @@ bool BroadcastHelper::BroadcastSuggestGrindMaterials(PlayerbotAI* ai, std::strin
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_trade", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_trade", ai->GetPersonality(), placeholders),
             { {TO_TRADE, 50}, {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -787,7 +787,7 @@ bool BroadcastHelper::BroadcastSuggestGrindReputation(PlayerbotAI* ai, std::vect
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_faction", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_faction", ai->GetPersonality(), placeholders),
             { {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }
@@ -814,7 +814,7 @@ bool BroadcastHelper::BroadcastSuggestSell(PlayerbotAI* ai, const ItemTemplate* 
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_sell", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_sell", ai->GetPersonality(), placeholders),
             { {TO_TRADE, 90}, {TO_GENERAL, 100} }
         );
     }
@@ -841,7 +841,7 @@ bool BroadcastHelper::BroadcastSuggestSomething(PlayerbotAI* ai, Player* bot)
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_something", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_something", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 10}, {TO_WORLD, 70}, {TO_GENERAL, 100} }
         );
     }
@@ -873,7 +873,7 @@ bool BroadcastHelper::BroadcastSuggestSomethingToxic(PlayerbotAI* ai, Player* bo
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_something_toxic", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_something_toxic", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 10}, {TO_WORLD, 70}, {TO_GENERAL, 100} }
         );
     }
@@ -932,7 +932,7 @@ bool BroadcastHelper::BroadcastSuggestToxicLinks(PlayerbotAI* ai, Player* bot)
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("suggest_toxic_links", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("suggest_toxic_links", ai->GetPersonality(), placeholders),
             { {TO_GUILD, 10}, {TO_WORLD, 70}, {TO_GENERAL, 100} }
         );
     }
@@ -950,7 +950,7 @@ bool BroadcastHelper::BroadcastSuggestThunderfury(PlayerbotAI* ai, Player* bot)
 
         return BroadcastToChannelWithGlobalChance(
             ai,
-            PlayerbotTextMgr::instance().GetBotText("thunderfury_spam", placeholders),
+            PlayerbotTextMgr::instance().GetBotText("thunderfury_spam", ai->GetPersonality(), placeholders),
             { {TO_WORLD, 70}, {TO_GENERAL, 100} }
         );
     }

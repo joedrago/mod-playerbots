@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `ai_playerbot_texts` (
   `text` varchar(1024) NOT NULL COMMENT 'text',
   `say_type` tinyint(3) NOT NULL DEFAULT '0' COMMENT '0 - say, 1 - yell',
   `reply_type` tinyint(3) NOT NULL DEFAULT '0' COMMENT 'if > 0 then can be filtered as a response to chat',
+  `personality` varchar(64) NOT NULL DEFAULT 'default' COMMENT 'bot personality filter',
   `text_loc1` varchar(1024) NOT NULL DEFAULT '',
   `text_loc2` varchar(1024) NOT NULL DEFAULT '',
   `text_loc3` varchar(1024) NOT NULL DEFAULT '',

@@ -3265,15 +3265,14 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 
 void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
 {
-    if (_isBotLogging)
-    {
-        LOG_INFO("playerbots", "{}/{} Bot {} logged in", playerBots.size(),
-                 sRandomPlayerbotMgr.GetMaxAllowedBotCount(), bot->GetName().c_str());
+    PlayerbotAI* ai = GET_PLAYERBOT_AI(bot);
+    LOG_INFO("playerbots", "{}/{} Bot {} logged in (personality: {})", playerBots.size(),
+             sRandomPlayerbotMgr.GetMaxAllowedBotCount(), bot->GetName().c_str(),
+             (ai && !ai->GetPersonality().empty()) ? ai->GetPersonality() : "default");
 
-        if (playerBots.size() == sRandomPlayerbotMgr.GetMaxAllowedBotCount())
-        {
-            _isBotLogging = false;
-        }
+    if (_isBotLogging && playerBots.size() == sRandomPlayerbotMgr.GetMaxAllowedBotCount())
+    {
+        _isBotLogging = false;
     }
 
     if (sPlayerbotAIConfig.randomBotFixedLevel)
