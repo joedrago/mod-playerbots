@@ -630,8 +630,6 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
     bool sameAccountBot = master && (accountId == master->GetSession()->GetAccountId());
     if ((addClassBot || sameAccountBot) && master && bot->GetLevel() != master->GetLevel())
     {
-        // PlayerbotFactory factory(bot, master->GetLevel());
-        // factory.Randomize(false);
         uint32 mixedGearScore =
             PlayerbotAI::GetMixedGearScore(master, true, false, 12) * sPlayerbotAIConfig.autoInitEquipLevelLimitRatio;
         // work around: distinguish from 0 if no gear

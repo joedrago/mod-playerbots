@@ -294,18 +294,58 @@ bool AutoGearAction::Execute(Event /*event*/)
         return false;
     }
 
-    botAI->TellMaster("I'm auto gearing");
-    uint32 gs = sPlayerbotAIConfig.autoGearScoreLimit == 0
-                    ? 0
-                    : PlayerbotFactory::CalcMixedGearScore(sPlayerbotAIConfig.autoGearScoreLimit,
-                                                           sPlayerbotAIConfig.autoGearQualityLimit);
-    PlayerbotFactory factory(bot, bot->GetLevel(), sPlayerbotAIConfig.autoGearQualityLimit, gs);
-    factory.InitEquipment(true);
+    // Match bot gear to master's gearscore, unless bot is its own master
+    Player* master = GetMaster();
+    uint32 gs = 0;
+    if (master && master->GetGUID() != bot->GetGUID())
+    {
+        gs = PlayerbotAI::GetMixedGearScore(master, true, false, 12);
+        if (gs == 0)
+            gs = 1;
+        botAI->TellMaster("I'm auto gearing to match your gear...");
+    }
+    else
+    {
+        gs = sPlayerbotAIConfig.autoGearScoreLimit == 0
+                 ? 0
+                 : PlayerbotFactory::CalcMixedGearScore(sPlayerbotAIConfig.autoGearScoreLimit,
+                                                        sPlayerbotAIConfig.autoGearQualityLimit);
+        botAI->TellMaster("I'm auto gearing");
+    }
+    // When matching master's gear, use non-incremental mode so gear can be downgraded.
+    // Incremental mode (true) refuses to replace items unless the new one is 20% better.
+    bool matchingMaster = master && master->GetGUID() != bot->GetGUID() && gs > 0;
+    PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_LEGENDARY, gs);
+    factory.InitEquipment(!matchingMaster);
+    if (matchingMaster)
+    {
+        // Destroy armor/weapons left in bags so the bot AI doesn't re-equip old gear
+        auto destroyIfEquipment = [&](uint8 bagSlot, uint8 slot) {
+            if (Item* item = bot->GetItemByPos(bagSlot, slot))
+            {
+                ItemTemplate const* proto = item->GetTemplate();
+                if (proto && (proto->Class == ITEM_CLASS_WEAPON || proto->Class == ITEM_CLASS_ARMOR))
+                    bot->DestroyItem(bagSlot, slot, true);
+            }
+        };
+        for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+            destroyIfEquipment(INVENTORY_SLOT_BAG_0, i);
+        for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+            if (Bag* bag = (Bag*)bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                for (uint32 j = 0; j < bag->GetBagSize(); ++j)
+                    destroyIfEquipment(i, j);
+    }
     factory.InitAmmo();
     if (bot->GetLevel() >= sPlayerbotAIConfig.minEnchantingBotLevel)
     {
         factory.ApplyEnchantAndGemsNew();
     }
     bot->DurabilityRepairAll(false, 1.0f, false);
+    if (matchingMaster)
+    {
+        uint32 botGs = PlayerbotAI::GetMixedGearScore(bot, false, false, 0);
+        botAI->TellMaster("Done! My gearscore is " + std::to_string(botGs) +
+                          " (yours is " + std::to_string(gs) + ")");
+    }
     return true;
 }
