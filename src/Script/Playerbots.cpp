@@ -28,6 +28,8 @@
 #include "PlayerbotSpellRepository.h"
 #include "PlayerbotWorldThreadProcessor.h"
 #include "RandomPlayerbotMgr.h"
+
+extern void dumpOnlineState(PlayerBotMap const& playerBots, std::vector<Player*> const& realPlayers);
 #include "ScriptMgr.h"
 #include "PlayerbotCommandScript.h"
 #include "cmath"
@@ -380,6 +382,17 @@ public:
 
     void OnUpdate(uint32 diff) override
     {
+        // Dump online state every ~1s, independent of heavy bot manager work
+        {
+            static time_t dumpStateTimer = 0;
+            time_t now = time(nullptr);
+            if (now >= dumpStateTimer + 1)
+            {
+                dumpStateTimer = now;
+                dumpOnlineState(sRandomPlayerbotMgr.GetAllBots(), sRandomPlayerbotMgr.GetPlayers());
+            }
+        }
+
         PlayerbotWorldThreadProcessor::instance().Update(diff);
         sRandomPlayerbotMgr.UpdateAI(diff);  // World thread only
     }

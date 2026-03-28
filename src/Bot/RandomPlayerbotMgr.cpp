@@ -322,6 +322,74 @@ void RandomPlayerbotMgr::LogPlayerLocation()
     }
 }
 
+void dumpOnlineState(PlayerBotMap const& playerBots, std::vector<Player*> const& realPlayers)
+{
+    static std::string destPath;
+    static std::string tmpPath;
+    if (destPath.empty())
+    {
+        std::string base = sWorld->GetDataPath();
+        if (!base.empty() && base.back() != '/')
+            base += '/';
+        destPath = base + "../state/online.tsv";
+        tmpPath  = base + "../state/online.tsv.tmp";
+    }
+
+    FILE* f = fopen(tmpPath.c_str(), "w");
+    if (!f)
+    {
+        LOG_WARN("playerbots", "dumpOnlineState: failed to open '{}': {}", tmpPath, strerror(errno));
+        return;
+    }
+
+    fprintf(f, "name\tlevel\trace\tclass\tfaction\tisbot\tzone\tarea\tmap\tx\ty\tz\tindungeon\n");
+
+    // Write real players (and player-summoned bots)
+    for (auto* p : realPlayers)
+    {
+        if (!p || !p->IsInWorld())
+            continue;
+        int botType = GET_PLAYERBOT_AI(p) ? 2 : 0;  // 0=real player, 2=player-summoned bot
+        fprintf(f, "%s\t%u\t%u\t%u\t%s\t%d\t%u\t%u\t%u\t%.1f\t%.1f\t%.1f\t%u\n",
+            p->GetName().c_str(),
+            p->GetLevel(),
+            p->getRace(),
+            p->getClass(),
+            IsAlliance(p->getRace()) ? "alliance" : "horde",
+            botType,
+            p->GetZoneId(),
+            p->GetAreaId(),
+            p->GetMapId(),
+            p->GetPositionX(),
+            p->GetPositionY(),
+            p->GetPositionZ(),
+            (p->GetMap() && p->GetMap()->Instanceable()) ? 1u : 0u);
+    }
+
+    // Write bots
+    for (auto const& [guid, bot] : playerBots)
+    {
+        if (!bot || !bot->IsInWorld())
+            continue;
+        fprintf(f, "%s\t%u\t%u\t%u\t%s\t1\t%u\t%u\t%u\t%.1f\t%.1f\t%.1f\t%u\n",
+            bot->GetName().c_str(),
+            bot->GetLevel(),
+            bot->getRace(),
+            bot->getClass(),
+            IsAlliance(bot->getRace()) ? "alliance" : "horde",
+            bot->GetZoneId(),
+            bot->GetAreaId(),
+            bot->GetMapId(),
+            bot->GetPositionX(),
+            bot->GetPositionY(),
+            bot->GetPositionZ(),
+            (bot->GetMap() && bot->GetMap()->Instanceable()) ? 1u : 0u);
+    }
+
+    fclose(f);
+    rename(tmpPath.c_str(), destPath.c_str());
+}
+
 void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
 {
     if (totalPmo)

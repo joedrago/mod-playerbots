@@ -1792,9 +1792,14 @@ void PlayerbotFactory::InitEquipment(bool incremental, bool second_chance)
                 {
                     for (uint32 itemId : sRandomItemMgr.GetCachedEquipments(requiredLevel, inventoryType))
                     {
-                        uint32 skipProb = 25;
-                        if (urand(1, 100) <= skipProb)
-                            continue;
+                        // Skip random items to add variety for random bots,
+                        // but not when matching a master's gearscore — we want the best fit.
+                        if (gearScoreLimit == 0)
+                        {
+                            uint32 skipProb = 25;
+                            if (urand(1, 100) <= skipProb)
+                                continue;
+                        }
 
                         // disable next expansion gear
                         if (sPlayerbotAIConfig.limitGearExpansion && bot->GetLevel() <= 60 && itemId >= 23728)
@@ -1812,8 +1817,10 @@ void PlayerbotFactory::InitEquipment(bool incremental, bool second_chance)
 
                         bool shouldCheckGS = desiredQuality > ITEM_QUALITY_NORMAL;
 
+                        // Allow individual items slightly above the average gearscore (1.1x)
+                        // since the master's score is an average — some of their items are above it.
                         if (shouldCheckGS && gearScoreLimit != 0 &&
-                            CalcMixedGearScore(proto->ItemLevel, proto->Quality) > gearScoreLimit)
+                            CalcMixedGearScore(proto->ItemLevel, proto->Quality) > (uint32)(gearScoreLimit * 1.1f))
                         {
                             continue;
                         }
