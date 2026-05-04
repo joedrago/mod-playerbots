@@ -503,7 +503,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
     // Redistribute idle bots toward zones where same-faction real players are
     {
         static time_t nearPlayerCheckTimer = 0;
-        if (time(nullptr) > nearPlayerCheckTimer + 3)
+        if (time(nullptr) > nearPlayerCheckTimer + 15)
         {
             nearPlayerCheckTimer = time(nullptr);
             uint32 totalBots = 0;
@@ -635,7 +635,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
                     // Rate-limit expensive Randomize calls, but always allow cheap teleports
                     if (needsRelevel)
                     {
-                        if (releveled >= 5)
+                        if (releveled >= 2)
                             continue;
 
                         uint32 botId = bot->GetGUID().GetCounter();
@@ -735,44 +735,87 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
             }
             // If no real players, leave ratio as-is
 
-            // Log off a few bots of the faction with 0 real players
-            if (anyAlliance != anyHorde)
+            // Log off excess bots from the over-represented faction.
+            // This handles both the one-faction case (log off all of unwanted faction)
+            // and the balanced case (e.g. ratio went from 0/100 back to 50/50, need to
+            // log off excess horde bots to make room for alliance).
+            if (anyAlliance || anyHorde)
             {
-                bool unwantedFaction = anyHorde; // if only Horde players, unwanted = Alliance (true)
-                uint32 loggedOff = 0;
-                // Iterate a copy since we modify currentBots
-                std::list<uint32> botsCopy = currentBots;
-                for (uint32 botGuid : botsCopy)
+                // Count current online bots per faction
+                uint32 onlineAllianceBots = 0;
+                uint32 onlineHordeBots = 0;
+                for (uint32 botGuid : currentBots)
                 {
-                    if (loggedOff >= 10)
-                        break;
-
                     ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(botGuid);
                     Player* botPlayer = GetPlayerBot(guid);
                     if (!botPlayer || !botPlayer->IsInWorld())
                         continue;
                     if (!IsRandomBot(botPlayer))
                         continue;
-                    if (botPlayer->GetGroup())
-                        continue;
-                    if (IsAlliance(botPlayer->getRace()) != unwantedFaction)
-                        continue;
+                    if (IsAlliance(botPlayer->getRace()))
+                        onlineAllianceBots++;
+                    else
+                        onlineHordeBots++;
+                }
 
-                    // Check idle
-                    PlayerbotAI* botAI = GET_PLAYERBOT_AI(botPlayer);
-                    if (!botAI)
-                        continue;
-                    TravelTarget* target = botAI->GetAiObjectContext()
-                        ->GetValue<TravelTarget*>("travel target")->Get();
-                    if (target && target->getTravelState() != TravelState::TRAVEL_STATE_IDLE)
-                        continue;
+                uint32 totalOnlineBots = onlineAllianceBots + onlineHordeBots;
+                uint32 totalRatio = sPlayerbotAIConfig.randomBotAllianceRatio + sPlayerbotAIConfig.randomBotHordeRatio;
 
-                    LOG_INFO("playerbots", "Bot #{} <{}>: logging off (faction rebalance)",
-                             botGuid, botPlayer->GetName());
-                    SetEventValue(botGuid, "add", 0, 0);
-                    currentBots.remove(botGuid);
-                    LogoutPlayerBot(guid);
-                    loggedOff++;
+                // Determine target counts based on current ratio
+                uint32 targetAllianceBots = totalRatio > 0 ? totalOnlineBots * sPlayerbotAIConfig.randomBotAllianceRatio / totalRatio : 0;
+                uint32 targetHordeBots = totalOnlineBots - targetAllianceBots;
+
+                // Determine which faction is over-represented and by how much
+                bool logOffAlliance = onlineAllianceBots > targetAllianceBots;
+                uint32 excessCount = logOffAlliance
+                    ? onlineAllianceBots - targetAllianceBots
+                    : onlineHordeBots - targetHordeBots;
+
+                // Tolerate small imbalances (up to 20% of total) to avoid constant churn
+                uint32 tolerance = std::max(2u, totalOnlineBots / 5);
+                if (excessCount > tolerance)
+                {
+                    excessCount -= tolerance; // Only correct the amount beyond tolerance
+                    uint32 toLogOff = std::min(excessCount, (uint32)3);
+                    uint32 loggedOff = 0;
+
+                    LOG_INFO("playerbots", "Faction rebalance: online A={} H={}, target A={} H={}, logging off {} {} bots",
+                             onlineAllianceBots, onlineHordeBots, targetAllianceBots, targetHordeBots,
+                             toLogOff, logOffAlliance ? "Alliance" : "Horde");
+
+                    std::list<uint32> botsCopy = currentBots;
+                    for (uint32 botGuid : botsCopy)
+                    {
+                        if (loggedOff >= toLogOff)
+                            break;
+
+                        ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(botGuid);
+                        Player* botPlayer = GetPlayerBot(guid);
+                        if (!botPlayer || !botPlayer->IsInWorld())
+                            continue;
+                        if (!IsRandomBot(botPlayer))
+                            continue;
+                        if (botPlayer->GetGroup())
+                            continue;
+                        if (IsAlliance(botPlayer->getRace()) != logOffAlliance)
+                            continue;
+
+                        // Check idle
+                        PlayerbotAI* botAI = GET_PLAYERBOT_AI(botPlayer);
+                        if (!botAI)
+                            continue;
+                        TravelTarget* target = botAI->GetAiObjectContext()
+                            ->GetValue<TravelTarget*>("travel target")->Get();
+                        if (target && target->getTravelState() != TravelState::TRAVEL_STATE_IDLE)
+                            continue;
+
+                        LOG_INFO("playerbots", "Bot #{} <{}>: logging off (faction rebalance)",
+                                 botGuid, botPlayer->GetName());
+                        SetEventValue(botGuid, "add", 0, 0);
+                        currentBots.remove(botGuid);
+                        LogoutPlayerBot(guid);
+                        loggedOff++;
+                    }
                 }
             }
         }

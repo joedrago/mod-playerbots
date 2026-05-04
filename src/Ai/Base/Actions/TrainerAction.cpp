@@ -297,6 +297,7 @@ bool AutoGearAction::Execute(Event /*event*/)
     // Match bot gear to master's gearscore, unless bot is its own master
     Player* master = GetMaster();
     uint32 gs = 0;
+    uint32 quality = ITEM_QUALITY_LEGENDARY;
     if (master && master->GetGUID() != bot->GetGUID())
     {
         gs = PlayerbotAI::GetMixedGearScore(master, true, false, 12);
@@ -306,16 +307,17 @@ bool AutoGearAction::Execute(Event /*event*/)
     }
     else
     {
+        quality = sPlayerbotAIConfig.autoGearQualityLimit;
         gs = sPlayerbotAIConfig.autoGearScoreLimit == 0
                  ? 0
                  : PlayerbotFactory::CalcMixedGearScore(sPlayerbotAIConfig.autoGearScoreLimit,
-                                                        sPlayerbotAIConfig.autoGearQualityLimit);
+                                                        quality);
         botAI->TellMaster("I'm auto gearing");
     }
     // When matching master's gear, use non-incremental mode so gear can be downgraded.
     // Incremental mode (true) refuses to replace items unless the new one is 20% better.
     bool matchingMaster = master && master->GetGUID() != bot->GetGUID() && gs > 0;
-    PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_LEGENDARY, gs);
+    PlayerbotFactory factory(bot, bot->GetLevel(), quality, gs);
     factory.InitEquipment(!matchingMaster);
     if (matchingMaster)
     {
